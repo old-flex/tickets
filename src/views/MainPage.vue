@@ -36,6 +36,16 @@
     />
 
     <a :href="paymentUrl">{{ paymentUrl }}</a>
+
+    <Button @click="getUserOrders" label="Получить заказы" />
+    <div v-for="order in userOrders" :key="order.id">
+      {{ order.id }} {{ order.status }} {{ order.created }}
+    </div>
+
+    <Button @click="getUserTrips" label="Получить историю заказов" />
+    <div v-for="trip in userTrips" :key="trip.id">
+      {{ trip.id }} {{ trip.status }} {{ trip.created }}
+    </div>
   </div>
 </template>
 
@@ -50,6 +60,8 @@ import { SeatDTO } from "@/models/RaceSummaryDTO";
 import authClient from "@/api/authClient";
 import apiConfig from "@/api/apiConfig";
 import paymentClient from "@/api/paymentClient";
+import ordersClient from "@/api/ordersClient";
+import { BusOrderDTO } from "@/models/BusOrderDTO";
 
 export default defineComponent({
   name: "MainPage",
@@ -71,6 +83,10 @@ export default defineComponent({
     const freeSeat = ref<SeatDTO>();
 
     const paymentUrl = ref<string>("");
+
+    const userOrders = ref<BusOrderDTO[]>([]);
+
+    const userTrips = ref<BusOrderDTO[]>([]);
 
     onMounted(async () => {
       const token = (
@@ -152,6 +168,14 @@ export default defineComponent({
       ).data.url;
     };
 
+    const getUserOrders = async () => {
+      userOrders.value = (await ordersClient.getUserOrders()).data;
+    };
+
+    const getUserTrips = async () => {
+      userTrips.value = (await ordersClient.getUserTrips()).data;
+    };
+
     return {
       pointsOfDeparture,
       selectedPointOfDeparture,
@@ -161,12 +185,16 @@ export default defineComponent({
       races,
       freeSeat,
       paymentUrl,
+      userOrders,
+      userTrips,
 
       FilterMatchMode,
 
       findRaces,
       onChangeHandler,
       getRaceSummary,
+      getUserOrders,
+      getUserTrips,
     };
   },
 });
