@@ -30,9 +30,12 @@
 
     <Button
       v-for="(race, index) in races.slice(0, 5)"
+      @click="getRaceSummary(race)"
       :key="race.uid"
       :label="index + 1"
     />
+
+    <a :href="paymentUrl">{{ paymentUrl }}</a>
   </div>
 </template>
 
@@ -43,6 +46,10 @@ import { PointDTO } from "@/models/PointDTO";
 import { FilterMatchMode } from "primevue/api";
 import racesClient from "@/api/racesClient";
 import { RaceDTO } from "@/models/RaceDTO";
+import { SeatDTO } from "@/models/RaceSummaryDTO";
+import authClient from "@/api/authClient";
+import apiConfig from "@/api/apiConfig";
+import paymentClient from "@/api/paymentClient";
 
 export default defineComponent({
   name: "MainPage",
@@ -61,7 +68,20 @@ export default defineComponent({
 
     const races = ref<RaceDTO[]>([]);
 
+    const freeSeat = ref<SeatDTO>();
+
+    const paymentUrl = ref<string>("");
+
     onMounted(async () => {
+      const token = (
+        await authClient.login({
+          username: "+7-906-961-25-31",
+          password: "551274",
+        })
+      ).data.access_token;
+
+      apiConfig.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
       pointsOfDeparture.value = (
         await pointsClient.getPointsOfDeparture()
       ).data;
@@ -74,6 +94,8 @@ export default defineComponent({
     });
 
     const findRaces = async () => {
+      races.value = [];
+
       races.value = (
         await racesClient.getRaces({
           from: selectedPointOfDeparture.value?.id ?? 1,
@@ -100,6 +122,36 @@ export default defineComponent({
       }
     };
 
+    const getRaceSummary = async (race: RaceDTO) => {
+      freeSeat.value = (
+        await racesClient.getRaceSummary(race.uid)
+      ).data.seats[0];
+
+      const orderId = (
+        await racesClient.ticketReservation(race.uid, {
+          birthday: "2022-04-13T15:51:45.360Z",
+          citizenship: "Россия",
+          docNum: "000000",
+          docSeries: "1111",
+          docTypeCode: "1",
+          firstName: "Kostyan",
+          gender: "M",
+          lastName: "Konstantinov",
+          middleName: "Konstantinovich",
+          phone: "+7-906-961-25-31",
+          seatCode: freeSeat.value?.code,
+          ticketTypeCode: "1#1#0",
+        })
+      ).data.id;
+
+      paymentUrl.value = (
+        await paymentClient.getPaymentUrl({
+          orderIds: [+orderId],
+          paymentTypeId: 1,
+        })
+      ).data.url;
+    };
+
     return {
       pointsOfDeparture,
       selectedPointOfDeparture,
@@ -107,11 +159,14 @@ export default defineComponent({
       selectedPointOfArrival,
       date,
       races,
+      freeSeat,
+      paymentUrl,
 
       FilterMatchMode,
 
       findRaces,
       onChangeHandler,
+      getRaceSummary,
     };
   },
 });
@@ -122,6 +177,7 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   justify-content: center;
+  margin: 40px;
   align-items: center;
   gap: 20px;
 
