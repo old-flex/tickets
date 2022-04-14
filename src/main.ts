@@ -11,6 +11,8 @@ import PrimeVue from "primevue/config";
 import Dropdown from "primevue/dropdown";
 import Calendar from "primevue/calendar";
 import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import InputMask from "primevue/inputmask";
 
 createApp(App)
   .use(store)
@@ -19,4 +21,6 @@ createApp(App)
   .component("Dropdown", Dropdown)
   .component("Calendar", Calendar)
   .component("Button", Button)
+  .component("InputText", InputText)
+  .component("InputMask", InputMask)
   .mount("#app");

@@ -1,5 +1,11 @@
 <template>
   <div class="main-page">
+    <h2>Вход</h2>
+    <InputMask v-model="credentials.username" mask="+7-999-999-99-99" />
+    <InputText v-model="credentials.password" />
+    <Button @click="login" label="Войти" />
+
+    <h2>Покупка билетов</h2>
     <Dropdown
       @change="onChangeHandler"
       v-model="selectedPointOfDeparture"
@@ -37,11 +43,13 @@
 
     <a :href="paymentUrl">{{ paymentUrl }}</a>
 
+    <h2>Получить заказы</h2>
     <Button @click="getUserOrders" label="Получить заказы" />
     <div v-for="order in userOrders" :key="order.id">
       {{ order.id }} {{ order.status }} {{ order.created }}
     </div>
 
+    <h2>Получить историю заказов</h2>
     <Button @click="getUserTrips" label="Получить историю заказов" />
     <div v-for="trip in userTrips" :key="trip.id">
       {{ trip.id }} {{ trip.status }} {{ trip.created }}
@@ -57,7 +65,7 @@ import { FilterMatchMode } from "primevue/api";
 import racesClient from "@/api/racesClient";
 import { RaceDTO } from "@/models/RaceDTO";
 import { SeatDTO } from "@/models/RaceSummaryDTO";
-import authClient from "@/api/authClient";
+import authClient, { LoginRequest } from "@/api/authClient";
 import apiConfig from "@/api/apiConfig";
 import paymentClient from "@/api/paymentClient";
 import ordersClient from "@/api/ordersClient";
@@ -88,15 +96,13 @@ export default defineComponent({
 
     const userTrips = ref<BusOrderDTO[]>([]);
 
-    onMounted(async () => {
-      const token = (
-        await authClient.login({
-          username: "+7-906-961-25-31",
-          password: "551274",
-        })
-      ).data.access_token;
+    const credentials = ref<LoginRequest>({
+      username: "+7-906-961-25-31",
+      password: "551274",
+    });
 
-      apiConfig.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    onMounted(async () => {
+      await login();
 
       pointsOfDeparture.value = (
         await pointsClient.getPointsOfDeparture()
@@ -176,6 +182,13 @@ export default defineComponent({
       userTrips.value = (await ordersClient.getUserTrips()).data;
     };
 
+    const login = async () => {
+      const token = (await authClient.login(credentials.value)).data
+        .access_token;
+
+      apiConfig.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    };
+
     return {
       pointsOfDeparture,
       selectedPointOfDeparture,
@@ -187,6 +200,7 @@ export default defineComponent({
       paymentUrl,
       userOrders,
       userTrips,
+      credentials,
 
       FilterMatchMode,
 
@@ -195,6 +209,7 @@ export default defineComponent({
       getRaceSummary,
       getUserOrders,
       getUserTrips,
+      login,
     };
   },
 });
