@@ -13,6 +13,9 @@ import Calendar from "primevue/calendar";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import InputMask from "primevue/inputmask";
+import Fieldset from "primevue/fieldset";
+import Card from "primevue/card";
+import Dialog from "primevue/dialog";
 
 createApp(App)
   .use(store)
@@ -23,4 +26,7 @@ createApp(App)
   .component("Button", Button)
   .component("InputText", InputText)
   .component("InputMask", InputMask)
+  .component("Fieldset", Fieldset)
+  .component("Card", Card)
+  .component("Dialog", Dialog)
   .mount("#app");

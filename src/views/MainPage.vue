@@ -4,6 +4,33 @@
     <InputMask v-model="credentials.username" mask="+7-999-999-99-99" />
     <InputText v-model="credentials.password" />
     <Button @click="login" label="Войти" />
+    <Button @click="restorePassword" label="Восстановить пароль" />
+
+    <Card>
+      <template #title> Карточка пользователя </template>
+      <template #content>
+        <div>ID: {{ userInfo.id }}</div>
+        <div>{{ userInfo.lastName }}</div>
+        <div>{{ userInfo.firstName }}</div>
+        <div>{{ userInfo.middleName }}</div>
+        <div>{{ userInfo.phone }}</div>
+        <div>{{ userInfo.email }}</div>
+        <div>
+          {{
+            userInfo.confirmEmail
+              ? "Почта подтверждена"
+              : "Почта не подтверждена"
+          }}
+        </div>
+      </template>
+    </Card>
+    <!--    <Button-->
+    <!--      @click="showEditUserDialog = true"-->
+    <!--      label="Редактировать пользователя"-->
+    <!--    />-->
+    <!--    <Dialog v-model:visible="showEditUserDialog">-->
+    <!--      <EditUserModal :user-data="{ ...userInfo }" />-->
+    <!--    </Dialog>-->
 
     <h2>Покупка билетов</h2>
     <Dropdown
@@ -32,7 +59,7 @@
 
     <Calendar v-model="date" date-format="dd.mm.yy" />
 
-    <Button @click="findRaces" label="Найти рейсы" />
+    <Button @click="findRaces" label="Найти рейсы" :loading="isLoading" />
 
     <Button
       v-for="(race, index) in races.slice(0, 5)"
@@ -45,9 +72,17 @@
 
     <h2>Получить заказы</h2>
     <Button @click="getUserOrders" label="Получить заказы" />
-    <div v-for="order in userOrders" :key="order.id">
-      {{ order.id }} {{ order.status }} {{ order.created }}
-    </div>
+    <Fieldset
+      v-for="order in userOrders"
+      :key="order.id"
+      :toggleable="true"
+      :collapsed="true"
+      :legend="`${order.id} ${order.status} ${order.created}`"
+    >
+      <div v-for="ticket in order.tickets" :key="ticket.id">
+        {{ ticket.id }} {{ ticket.status }}
+      </div>
+    </Fieldset>
 
     <h2>Получить историю заказов</h2>
     <Button @click="getUserTrips" label="Получить историю заказов" />
@@ -70,10 +105,13 @@ import apiConfig from "@/api/apiConfig";
 import paymentClient from "@/api/paymentClient";
 import ordersClient from "@/api/ordersClient";
 import { BusOrderDTO } from "@/models/BusOrderDTO";
+import { BusUserDTO } from "@/models/BusUserDTO";
+import userClient from "@/api/userClient";
+import EditUserModal from "@/components/EditUserModal.vue";
 
 export default defineComponent({
   name: "MainPage",
-
+  components: { EditUserModal },
   setup() {
     const pointsOfDeparture = ref<PointDTO[]>([]);
     const selectedPointOfDeparture = ref<PointDTO>();
@@ -101,6 +139,12 @@ export default defineComponent({
       password: "551274",
     });
 
+    let isLoading = ref<boolean>(false);
+
+    let userInfo = ref<Partial<BusUserDTO>>({});
+
+    const showEditUserDialog = ref(false);
+
     onMounted(async () => {
       await login();
 
@@ -116,6 +160,7 @@ export default defineComponent({
     });
 
     const findRaces = async () => {
+      isLoading.value = true;
       races.value = [];
 
       races.value = (
@@ -126,6 +171,8 @@ export default defineComponent({
           count: 1,
         })
       ).data;
+
+      isLoading.value = false;
     };
 
     const onChangeHandler = async () => {
@@ -187,6 +234,23 @@ export default defineComponent({
         .access_token;
 
       apiConfig.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      await getUserMe();
+    };
+
+    const getUserMe = async () => {
+      userInfo.value = {};
+
+      userInfo.value = (await userClient.getUserMe()).data;
+    };
+
+    const restorePassword = () => {
+      authClient.restorePassword(credentials.value.username);
+    };
+
+    const editUser = async () => {
+      await userClient.editUser(userInfo.value);
+      await getUserMe();
     };
 
     return {
@@ -201,6 +265,9 @@ export default defineComponent({
       userOrders,
       userTrips,
       credentials,
+      isLoading,
+      userInfo,
+      showEditUserDialog,
 
       FilterMatchMode,
 
@@ -210,6 +277,7 @@ export default defineComponent({
       getUserOrders,
       getUserTrips,
       login,
+      restorePassword,
     };
   },
 });

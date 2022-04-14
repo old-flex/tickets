@@ -12,4 +12,8 @@ export default {
   ): Promise<AxiosResponse<{ access_token: string }>> {
     return apiConfig.post(`/login`, payload);
   },
+
+  restorePassword(phone: string): Promise<AxiosResponse<void>> {
+    return apiConfig.post(`/v1/users`, { phone: phone });
+  },
 };
